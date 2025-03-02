@@ -49,7 +49,6 @@ async function processTransaction(
   });
 
   if (currentNonce === null) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const nonceHex = await walletClient.request({
       method: "eth_getTransactionCount" as any,
       params: [account.address, "pending"],
@@ -74,7 +73,6 @@ async function processTransaction(
   } catch (error) {
     if ((error as { message: string }).message &&
         (error as { message: string }).message.includes("Nonce too low")) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const nonceHex = await walletClient.request({
         method: "eth_getTransactionCount" as any,
         params: [account.address, "pending"],
