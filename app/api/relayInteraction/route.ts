@@ -132,21 +132,22 @@ async function processQueue() {
 // ================================
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*", // Autorise toutes les origines. Vous pouvez spécifier un domaine particulier si nécessaire.
+  "Access-Control-Allow-Origin": "*", // Autorise toutes les origines. Vous pouvez restreindre à un domaine spécifique.
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Max-Age": "86400", // 24 heures
 };
 
-// Gérer les requêtes OPTIONS (preflight)
+// Gérer la requête OPTIONS (preflight)
+// Nous renvoyons ici un statut 200 avec une chaîne vide pour nous assurer que les en-têtes sont inclus.
 export async function OPTIONS() {
-  return new NextResponse(null, {
+  return new NextResponse("", {
     status: 200,
     headers: corsHeaders,
   });
 }
 
-// Gérer les requêtes POST avec les en-têtes CORS
+// Gérer la requête POST en renvoyant également les en-têtes CORS
 export async function POST(req: Request) {
   try {
     const { playerAddress, action, score } = await req.json();
