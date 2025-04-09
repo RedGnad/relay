@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 import { Chain, createWalletClient, getContract, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
+// Vérification de la configuration dans les variables d'environnement
 const RELAYER_PRIVATE_KEY = process.env.RELAYER_PK as `0x${string}`;
 const RPC_URL = process.env.NEXT_PUBLIC_MONAD_RPC_URL as string;
 const CHAIN_ID = Number(process.env.NEXT_PUBLIC_MONAD_CHAIN_ID);
@@ -13,8 +14,8 @@ if (!RELAYER_PRIVATE_KEY || !RPC_URL || !CONTRACT_ADDRESS) {
   throw new Error("Relayer configuration missing in environment variables");
 }
 
+// Création du transport RPC
 const transport = http(RPC_URL);
-
 let currentNonce: number | null = null;
 
 interface QueueItem {
@@ -69,11 +70,11 @@ async function processTransaction(
       // Utiliser submitScore pour game_over
       actualAction = "submitScore";
       if (typeof score !== "number") {
-        // Si score n'est pas fourni, utiliser une valeur par défaut
+        // Si le score n'est pas fourni, utiliser une valeur par défaut
         score = 0;
       }
     } else if (action === "powerup") {
-      // Mapper powerup à click
+      // Mapper "powerup" à "click"
       actualAction = "click";
     }
     
@@ -126,15 +127,18 @@ async function processQueue() {
   processing = false;
 }
 
-// Configuration CORS - En-têtes communs pour toutes les réponses
+// ================================
+// Configuration CORS
+// ================================
+
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "*", // Autorise toutes les origines. Vous pouvez spécifier un domaine particulier si nécessaire.
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Max-Age": "86400", // 24 heures
 };
 
-// Gérer les requêtes OPTIONS (pour CORS preflight)
+// Gérer les requêtes OPTIONS (preflight)
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
@@ -142,6 +146,7 @@ export async function OPTIONS() {
   });
 }
 
+// Gérer les requêtes POST avec les en-têtes CORS
 export async function POST(req: Request) {
   try {
     const { playerAddress, action, score } = await req.json();
