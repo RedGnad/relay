@@ -63,15 +63,29 @@ async function processTransaction(
 
   let txHash: string;
   try {
-    if (action === "click") {
+    // Mapper les différentes actions à click ou submitScore
+    let actualAction = action;
+    if (action === "game_over") {
+      // Utiliser submitScore pour game_over
+      actualAction = "submitScore";
+      if (typeof score !== "number") {
+        // Si score n'est pas fourni, utiliser une valeur par défaut
+        score = 0;
+      }
+    } else if (action === "powerup") {
+      // Mapper powerup à click
+      actualAction = "click";
+    }
+    
+    if (actualAction === "click") {
       txHash = await contract.write.click([playerAddress], txOptions);
-    } else if (action === "submitScore") {
+    } else if (actualAction === "submitScore") {
       if (typeof score !== "number") {
         throw new Error("Invalid or missing 'score' parameter for submitScore action.");
       }
       txHash = await contract.write.submitScore([score, playerAddress], txOptions);
     } else {
-      throw new Error("Invalid action. Supported actions: 'click', 'submitScore'.");
+      throw new Error("Invalid action. Supported actions: 'click', 'submitScore', 'game_over', 'powerup'.");
     }
   } catch (error) {
     if ((error as { message: string }).message &&
@@ -83,9 +97,9 @@ async function processTransaction(
       currentNonce = parseInt(String(nonceHex), 16);
       const newTxOptions = { nonce: currentNonce };
       currentNonce++;
-      if (action === "click") {
+      if (action === "click" || action === "powerup") {
         txHash = await contract.write.click([playerAddress], newTxOptions);
-      } else if (action === "submitScore") {
+      } else if (action === "submitScore" || action === "game_over") {
         txHash = await contract.write.submitScore([score, playerAddress], newTxOptions);
       } else {
         throw new Error("Invalid action on retry.");
@@ -112,13 +126,32 @@ async function processQueue() {
   processing = false;
 }
 
+// Configuration CORS - En-têtes communs pour toutes les réponses
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Max-Age": "86400", // 24 heures
+};
+
+// Gérer les requêtes OPTIONS (pour CORS preflight)
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: corsHeaders,
+  });
+}
+
 export async function POST(req: Request) {
   try {
     const { playerAddress, action, score } = await req.json();
     if (!playerAddress || !action) {
       return NextResponse.json(
         { error: "Invalid request. 'playerAddress' and 'action' are required." },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: corsHeaders
+        }
       );
     }
     const txPromise = new Promise<string>((resolve, reject) => {
@@ -126,9 +159,18 @@ export async function POST(req: Request) {
     });
     processQueue();
     const txHash = await txPromise;
-    return NextResponse.json({ success: true, txHash });
+    return NextResponse.json(
+      { success: true, txHash },
+      { headers: corsHeaders }
+    );
   } catch (error) {
     console.error("Relayer error:", error);
-    return NextResponse.json({ error: "Transaction failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Transaction failed" }, 
+      { 
+        status: 500,
+        headers: corsHeaders 
+      }
+    );
   }
 }
