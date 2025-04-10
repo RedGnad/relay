@@ -64,7 +64,7 @@ async function processTransaction(
 
   let txHash: string;
   try {
-    // Mapper les différentes actions : "click", "submitScore", "game_over", "powerup"
+    // Mapper les actions possibles ("click", "submitScore", "game_over", "powerup")
     let actualAction = action;
     if (action === "game_over") {
       actualAction = "submitScore";
@@ -128,21 +128,22 @@ async function processQueue() {
 // Configuration CORS
 // ================================
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",  // Vous pouvez restreindre à un domaine si besoin : ex "http://localhost:53505"
+  "Access-Control-Allow-Origin": "*",              // Autorise toutes les origines (vous pouvez restreindre à votre domaine)
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  "Access-Control-Max-Age": "86400"       // 24 heures
+  "Access-Control-Max-Age": "86400"                   // 24 heures
 };
 
-// Gérer la requête OPTIONS avec new Response pour garantir l'envoi des headers
+// Fonction OPTIONS custom pour forcer une réponse avec un statut 200 et inclure les en-têtes CORS
 export async function OPTIONS() {
-  return new Response(null, {
+  // Renvoie un corps JSON vide ("{}") pour que les en-têtes soient transmis
+  return new Response("{}", {
     status: 200,
     headers: corsHeaders,
   });
 }
 
-// Gérer la requête POST en renvoyant aussi les headers CORS
+// Fonction POST qui traite la transaction et renvoie les en-têtes CORS dans la réponse
 export async function POST(req: Request) {
   try {
     const { playerAddress, action, score } = await req.json();
@@ -164,7 +165,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Relayer error:", error);
     return NextResponse.json(
-      { error: "Transaction failed" },
+      { error: "Transaction failed", details: (error as { message: string }).message },
       { status: 500, headers: corsHeaders }
     );
   }
