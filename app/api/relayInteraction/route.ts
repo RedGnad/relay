@@ -64,17 +64,14 @@ async function processTransaction(
 
   let txHash: string;
   try {
-    // Mapper les différentes actions à click ou submitScore
+    // Mapper les différentes actions : "click", "submitScore", "game_over", "powerup"
     let actualAction = action;
     if (action === "game_over") {
-      // Utiliser submitScore pour game_over
       actualAction = "submitScore";
       if (typeof score !== "number") {
-        // Si le score n'est pas fourni, utiliser une valeur par défaut
         score = 0;
       }
     } else if (action === "powerup") {
-      // Mapper "powerup" à "click"
       actualAction = "click";
     }
     
@@ -130,34 +127,29 @@ async function processQueue() {
 // ================================
 // Configuration CORS
 // ================================
-
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*", // Autorise toutes les origines. Vous pouvez restreindre à un domaine spécifique.
+  "Access-Control-Allow-Origin": "*",  // Vous pouvez restreindre à un domaine si besoin : ex "http://localhost:53505"
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  "Access-Control-Max-Age": "86400", // 24 heures
+  "Access-Control-Max-Age": "86400"       // 24 heures
 };
 
-// Gérer la requête OPTIONS (preflight)
-// Nous renvoyons ici un statut 200 avec une chaîne vide pour nous assurer que les en-têtes sont inclus.
+// Gérer la requête OPTIONS avec new Response pour garantir l'envoi des headers
 export async function OPTIONS() {
-  return new NextResponse("", {
+  return new Response(null, {
     status: 200,
     headers: corsHeaders,
   });
 }
 
-// Gérer la requête POST en renvoyant également les en-têtes CORS
+// Gérer la requête POST en renvoyant aussi les headers CORS
 export async function POST(req: Request) {
   try {
     const { playerAddress, action, score } = await req.json();
     if (!playerAddress || !action) {
       return NextResponse.json(
         { error: "Invalid request. 'playerAddress' and 'action' are required." },
-        { 
-          status: 400,
-          headers: corsHeaders
-        }
+        { status: 400, headers: corsHeaders }
       );
     }
     const txPromise = new Promise<string>((resolve, reject) => {
@@ -172,11 +164,8 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Relayer error:", error);
     return NextResponse.json(
-      { error: "Transaction failed" }, 
-      { 
-        status: 500,
-        headers: corsHeaders 
-      }
+      { error: "Transaction failed" },
+      { status: 500, headers: corsHeaders }
     );
   }
 }
